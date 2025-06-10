@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import Database from 'better-sqlite3';
 
-const TSV_FILE_PATH = path.join(process.cwd(), 'data_local', 'opennutrition_foods.tsv');
+const TSV_FILE_PATH = path.join(process.cwd(), 'data_local_temp', 'opennutrition_foods.tsv');
 const DB_FILE_PATH = path.join(process.cwd(), 'data_local', 'opennutrition_foods.db');
 
 function convertTsvToSqlite() {
@@ -25,6 +25,13 @@ function convertTsvToSqlite() {
     const dataRows = lines.slice(1).map(line => line.split('\t'));
     
     console.log(`Found ${headers.length} columns and ${dataRows.length} data rows`);
+    
+    // Ensure the database directory exists
+    const dbDir = path.dirname(DB_FILE_PATH);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+      console.log(`Created directory: ${dbDir}`);
+    }
     
     if (fs.existsSync(DB_FILE_PATH)) {
       fs.unlinkSync(DB_FILE_PATH);

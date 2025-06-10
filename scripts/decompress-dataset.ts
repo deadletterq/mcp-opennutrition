@@ -5,7 +5,7 @@ import { pipeline } from 'stream/promises';
 import * as yauzl from 'yauzl';
 
 const DATASET_ZIP = path.join(process.cwd(), 'data', 'opennutrition-dataset-2025.1.zip');
-const OUTPUT_DIR = path.join(process.cwd(), 'data_local');
+const OUTPUT_DIR = path.join(process.cwd(), 'data_local_temp');
 
 async function decompressDataset() {
   console.log('Decompressing dataset...');
