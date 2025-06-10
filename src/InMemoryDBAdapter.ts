@@ -65,7 +65,7 @@ export class InMemoryDBAdapter {
     });
   }
 
-  async getAll(): Promise<FoodItem[]> {
-    return this.FOODS;
+  async getAll(page: number, pageSize: number): Promise<FoodItem[]> {
+    return this.FOODS.slice(page, pageSize);
   }
 }
