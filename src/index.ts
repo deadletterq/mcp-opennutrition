@@ -4,8 +4,6 @@ import {
 import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
 import {InMemoryDBAdapter} from "./InMemoryDBAdapter.js";
 import {z} from "zod";
-import {ToolAnnotations} from "@modelcontextprotocol/sdk/types.js";
-import {ToolCallback} from "@modelcontextprotocol/sdk/server/mcp.js";
 
 const GetFoodsRequestSchema = z.object({
   page: z.number().min(1).optional().default(1),
@@ -22,22 +20,18 @@ class MCPServer {
       private readonly transport: StdioServerTransport,
       private readonly db: InMemoryDBAdapter,
   ) {
-    const getFoodsAnnotation: ToolAnnotations = {
+    this.server.tool("get-foods", "Get a list of foods", GetFoodsRequestSchema.shape, {
       title: "Get a list of foods",
       readOnlyHint: true,
-    }
-    const cb: ToolCallback<typeof GetFoodsRequestSchema.shape> = async (args, extra) => {
-      const page = args.page
-      const pageSize = args.pageSize
-      const foods = await this.db.getAll(page, pageSize);
+    }, async (args, extra) => {
+      const foods = await this.db.getAll(args.page, args.pageSize);
       return {
         content: [],
         structuredContent: {
           foods,
         },
       }
-    }
-    this.server.tool("get-foods", "Get a list of foods", GetFoodsRequestSchema.shape, getFoodsAnnotation, cb)
+    })
   }
 
   async connect(): Promise<void> {
