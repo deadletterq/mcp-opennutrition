@@ -4,8 +4,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import Database from 'better-sqlite3';
 
-const TSV_FILE_PATH = path.join(process.cwd(), 'data', 'opennutrition_foods.tsv');
-const DB_FILE_PATH = path.join(process.cwd(), 'data', 'opennutrition_foods.db');
+const TSV_FILE_PATH = path.join(process.cwd(), 'data_local', 'opennutrition_foods.tsv');
+const DB_FILE_PATH = path.join(process.cwd(), 'data_local', 'opennutrition_foods.db');
 
 function convertTsvToSqlite() {
   try {

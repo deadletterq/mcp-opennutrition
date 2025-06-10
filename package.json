@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc && chmod 755 build/index.js",
-    "convert-data": "tsx scripts/tsv-to-sqlite.ts"
+    "convert-data": "tsx scripts/tsv-to-sqlite.ts "
   },
   "files": [
     "build"
@@ -19,7 +19,9 @@
   "description": "",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
+    "@types/yauzl": "^2.10.3",
     "better-sqlite3": "^11.7.0",
+    "yauzl": "^3.2.0",
     "zod": "^3.25.46"
   },
   "devDependencies": {
