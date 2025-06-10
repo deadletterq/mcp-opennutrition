@@ -1,6 +1,6 @@
 import {McpServer,} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
-import {InMemoryDBAdapter} from "./InMemoryDBAdapter.js";
+import {SQLiteDBAdapter} from "./SQLiteDBAdapter.js";
 import {z} from "zod";
 
 const GetFoodsRequestSchema = z.object({
@@ -24,7 +24,7 @@ class MCPServer {
 
   constructor(
       private readonly transport: StdioServerTransport,
-      private readonly db: InMemoryDBAdapter,
+      private readonly db: SQLiteDBAdapter,
   ) {
     this.server.tool("get-foods", "Get a list of foods", GetFoodsRequestSchema.shape, {
       title: "Get a list of foods",
@@ -72,10 +72,9 @@ class MCPServer {
 }
 
 async function main() {
-  const db = new InMemoryDBAdapter()
-  await db.load()
+  const db = new SQLiteDBAdapter()
   const transport = new StdioServerTransport();
-  const server = new MCPServer(transport, db)
+  const server = new MCPServer(transport, db);
   await server.connect();
   console.error("OpenNutrition MCP Server running on stdio");
 }
