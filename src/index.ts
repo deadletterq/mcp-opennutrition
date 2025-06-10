@@ -1,8 +1,20 @@
-import {
-  McpServer,
-} from "@modelcontextprotocol/sdk/server/mcp.js";
+import {McpServer,} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
 import {InMemoryDBAdapter} from "./InMemoryDBAdapter.js";
+import {z} from "zod";
+
+const GetFoodsRequestSchema = z.object({
+  page: z.number().min(1).optional().default(1),
+  pageSize: z.number().optional().default(25),
+});
+
+const GetFoodByIdRequestSchema = z.object({
+  id: z.string().startsWith("fd_", "Food ID must start with 'fd_'"),
+});
+
+const GetFoodByEan13RequestSchema = z.object({
+  ean_13: z.string().length(13, "EAN-13 must be exactly 13 characters long")
+});
 
 class MCPServer {
   private readonly server = new McpServer({
@@ -14,32 +26,44 @@ class MCPServer {
       private readonly transport: StdioServerTransport,
       private readonly db: InMemoryDBAdapter,
   ) {
-    // this.server.resource(
-    //     "list-foods",
-    //     new ResourceTemplate("foods://list", {list: undefined}),
-    //     async () => {
-    //       const page = 1;
-    //       const pageSize = 25;
-    //       const start = (page - 1) * pageSize;
-    //       const end = start + pageSize;
-    //       const foods = FOODS.slice(start, end);
-    //       return {
-    //         contents: [
-    //           {
-    //             uri: `foods://list?page=${page}&pageSize=${pageSize}`,
-    //             text: JSON.stringify(foods),
-    //             mimeType: "application/json"
-    //           }
-    //         ],
-    //         _meta: {
-    //           page,
-    //           pageSize,
-    //           total: FOODS.length,
-    //           attribution: ATTRIBUTION
-    //         }
-    //       };
-    //     }
-    // );
+    this.server.tool("get-foods", "Get a list of foods", GetFoodsRequestSchema.shape, {
+      title: "Get a list of foods",
+      readOnlyHint: true,
+    }, async (args, extra) => {
+      const foods = await this.db.getAll(args.page, args.pageSize);
+      return {
+        content: [],
+        structuredContent: {
+          foods,
+        },
+      };
+    });
+
+    this.server.tool("get-food-by-id", "Get a food by its unique id", GetFoodByIdRequestSchema.shape, {
+      title: "Get a food by id",
+      readOnlyHint: true,
+    }, async (args, extra) => {
+      const food = await this.db.getById(args.id);
+      return {
+        content: [],
+        structuredContent: {
+          food: food,
+        },
+      };
+    });
+
+    this.server.tool("get-food-by-ean13", "Get a food by its EAN-13 barcode", GetFoodByEan13RequestSchema.shape, {
+      title: "Get a food by EAN-13",
+      readOnlyHint: true,
+    }, async (args, extra) => {
+      const food = await this.db.getByEan13(args.ean_13);
+      return {
+        content: [],
+        structuredContent: {
+          food: food,
+        },
+      };
+    });
   }
 
   async connect(): Promise<void> {
