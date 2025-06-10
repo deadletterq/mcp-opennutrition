@@ -3,15 +3,17 @@ import Database from 'better-sqlite3';
 interface FoodItem {
   id: string;
   name: string;
-  type?: string;
+  description?: string;
+  type?: 'everyday' | 'grocery' | 'prepared' | 'restaurant';
   labels?: string[];
   nutrition_100g?: Record<string, number>;
   alternate_names?: string[];
-  source?: string;
-  serving?: string;
-  package_size?: string;
+  source?: Record<string, any>[];
+  serving?: Record<string, any>;
+  package_size?: Record<string, any>;
   ingredient_analysis?: Record<string, any>;
   ean_13?: string;
+  ingredients?: string;
 }
 
 export class SQLiteDBAdapter {
