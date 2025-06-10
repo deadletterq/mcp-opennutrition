@@ -68,4 +68,12 @@ export class InMemoryDBAdapter {
   async getAll(page: number, pageSize: number): Promise<FoodItem[]> {
     return this.FOODS.slice(page, pageSize);
   }
+
+  async getById(id: string): Promise<FoodItem | null> {
+    return this.FOODS.find(food => food.id === id) || null;
+  }
+
+  async getByEan13(ean_13: string): Promise<FoodItem | null> {
+    return this.FOODS.find(food => food.ean_13 === ean_13) || null;
+  }
 }

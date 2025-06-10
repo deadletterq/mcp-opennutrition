@@ -1,6 +1,4 @@
-import {
-  McpServer,
-} from "@modelcontextprotocol/sdk/server/mcp.js";
+import {McpServer,} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
 import {InMemoryDBAdapter} from "./InMemoryDBAdapter.js";
 import {z} from "zod";
@@ -8,7 +6,15 @@ import {z} from "zod";
 const GetFoodsRequestSchema = z.object({
   page: z.number().min(1).optional().default(1),
   pageSize: z.number().optional().default(25),
-})
+});
+
+const GetFoodByIdRequestSchema = z.object({
+  id: z.string().startsWith("fd_", "Food ID must start with 'fd_'"),
+});
+
+const GetFoodByEan13RequestSchema = z.object({
+  ean_13: z.string().length(13, "EAN-13 must be exactly 13 characters long")
+});
 
 class MCPServer {
   private readonly server = new McpServer({
@@ -30,8 +36,34 @@ class MCPServer {
         structuredContent: {
           foods,
         },
-      }
-    })
+      };
+    });
+
+    this.server.tool("get-food-by-id", "Get a food by its unique id", GetFoodByIdRequestSchema.shape, {
+      title: "Get a food by id",
+      readOnlyHint: true,
+    }, async (args, extra) => {
+      const food = await this.db.getById(args.id);
+      return {
+        content: [],
+        structuredContent: {
+          food: food,
+        },
+      };
+    });
+
+    this.server.tool("get-food-by-ean13", "Get a food by its EAN-13 barcode", GetFoodByEan13RequestSchema.shape, {
+      title: "Get a food by EAN-13",
+      readOnlyHint: true,
+    }, async (args, extra) => {
+      const food = await this.db.getByEan13(args.ean_13);
+      return {
+        content: [],
+        structuredContent: {
+          food: food,
+        },
+      };
+    });
   }
 
   async connect(): Promise<void> {
