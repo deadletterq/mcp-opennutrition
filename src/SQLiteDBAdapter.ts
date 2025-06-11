@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import {fileURLToPath} from 'url';
 
 interface FoodItem {
   id: string;
@@ -25,36 +25,64 @@ export class SQLiteDBAdapter {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
     const dbPath = path.join(__dirname, '..', 'data_local', 'opennutrition_foods.db');
-    this.db = new Database(dbPath, { readonly: true });
+    this.db = new Database(dbPath, {readonly: true});
+  }
+
+  /**
+   * Search foods by name or any alternate name (case-insensitive, partial match)
+   */
+  async searchByName(query: string, page: number = 1, pageSize: number = 25): Promise<FoodItem[]> {
+    const offset = (page - 1) * pageSize;
+    const selectClause = this.getFoodItemSelectClause();
+    // Fuzzy search: split query into words and match all with LIKE
+    const terms = query.trim().split(/\s+/).map(t => `%${t}%`);
+    let whereClauses = terms.map(() => "(LOWER(foods.name) LIKE LOWER(?) OR LOWER(alt.value) LIKE LOWER(?))").join(" AND ");
+    let args: string[] = [];
+    for (const t of terms) args.push(t, t);
+    args.push(pageSize.toString(), offset.toString());
+    const rows = this.db.prepare(`
+        SELECT DISTINCT ${selectClause}
+        FROM foods
+                 LEFT JOIN json_each(foods.alternate_names) AS alt ON 1 = 1
+        WHERE ${whereClauses} LIMIT ?
+        OFFSET ?
+    `).all(...args);
+    return rows.map(this.deserializeRow);
   }
 
   private getFoodItemSelectClause(): string {
-    return `id, name, type, ean_13,
-            json_extract(labels, '$') as labels,
-            json_extract(nutrition_100g, '$') as nutrition_100g,
-            json_extract(alternate_names, '$') as alternate_names,
-            json_extract(source, '$') as source,
-            json_extract(serving, '$') as serving,
-            json_extract(package_size, '$') as package_size,
-            json_extract(ingredient_analysis, '$') as ingredient_analysis`;
+    return `foods.id, foods.name, foods.type, foods.ean_13,
+            json_extract(foods.labels, '$') as labels,
+            json_extract(foods.nutrition_100g, '$') as nutrition_100g,
+            json_extract(foods.alternate_names, '$') as alternate_names,
+            json_extract(foods.source, '$') as source,
+            json_extract(foods.serving, '$') as serving,
+            json_extract(foods.package_size, '$') as package_size,
+            json_extract(foods.ingredient_analysis, '$') as ingredient_analysis`;
   }
 
   async getAll(page: number, pageSize: number): Promise<FoodItem[]> {
     const offset = (page - 1) * pageSize;
     const selectClause = this.getFoodItemSelectClause();
-    const rows = this.db.prepare(`SELECT ${selectClause} FROM foods LIMIT ? OFFSET ?`).all(pageSize, offset);
+    const rows = this.db.prepare(`SELECT ${selectClause}
+                                  FROM foods LIMIT ?
+                                  OFFSET ?`).all(pageSize, offset);
     return rows.map(this.deserializeRow);
   }
 
   async getById(id: string): Promise<FoodItem | null> {
     const selectClause = this.getFoodItemSelectClause();
-    const row = this.db.prepare(`SELECT ${selectClause} FROM foods WHERE id = ?`).get(id);
+    const row = this.db.prepare(`SELECT ${selectClause}
+                                 FROM foods
+                                 WHERE id = ?`).get(id);
     return row ? this.deserializeRow(row) : null;
   }
 
   async getByEan13(ean_13: string): Promise<FoodItem | null> {
     const selectClause = this.getFoodItemSelectClause();
-    const row = this.db.prepare(`SELECT ${selectClause} FROM foods WHERE ean_13 = ?`).get(ean_13);
+    const row = this.db.prepare(`SELECT ${selectClause}
+                                 FROM foods
+                                 WHERE ean_13 = ?`).get(ean_13);
     return row ? this.deserializeRow(row) : null;
   }
 
