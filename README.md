@@ -42,3 +42,9 @@ The dataset provides comprehensive nutritional profiles including macronutrients
 ## Usage
 
 Once configured, the MCP server runs fully locally on your machine and automatically provides food and nutrition query capabilities to Claude/Cline. All data processing and queries happen locally with no external API calls, ensuring privacy and fast response times.
+
+## Example
+
+Here is an example of how Claude uses the tool for a brownie recipe:
+
+![Brownie Recipe Example](readme_example.png)
