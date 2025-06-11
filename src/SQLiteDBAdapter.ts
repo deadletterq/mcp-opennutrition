@@ -3,6 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 interface FoodItem {
+  // No change, just context for insertion
+
   id: string;
   name: string;
   description?: string;
@@ -19,6 +21,49 @@ interface FoodItem {
 }
 
 export class SQLiteDBAdapter {
+  /**
+   * Search foods by name or any alternate name (case-insensitive, partial match)
+   */
+  async searchByName(query: string, page: number = 1, pageSize: number = 25): Promise<FoodItem[]> {
+    const offset = (page - 1) * pageSize;
+    const selectClause = this.getFoodItemSelectClause();
+    // Use fuzzy search with trigram if available, else fallback to LIKE
+    if (this.hasTrigram()) {
+      // Use similarity() from pg_trgm or similar extension if available
+      const rows = this.db.prepare(`
+        SELECT DISTINCT ${selectClause},
+               MAX(similarity(LOWER(foods.name), LOWER(?))) as sim
+        FROM foods
+        LEFT JOIN json_each(foods.alternate_names) AS alt ON 1=1
+        WHERE similarity(LOWER(foods.name), LOWER(?)) > 0.2
+           OR similarity(LOWER(alt.value), LOWER(?)) > 0.2
+        GROUP BY foods.id
+        ORDER BY sim DESC
+        LIMIT ? OFFSET ?
+      `).all(query, query, query, pageSize, offset);
+      return rows.map(this.deserializeRow);
+    } else {
+      // Fallback: split query into words and match all with LIKE
+      const terms = query.trim().split(/\s+/).map(t => `%${t}%`);
+      let whereClauses = terms.map(() => "(LOWER(foods.name) LIKE LOWER(?) OR LOWER(alt.value) LIKE LOWER(?))").join(" AND ");
+      let args: string[] = [];
+      for (const t of terms) args.push(t, t);
+      args.push(pageSize.toString(), offset.toString());
+      const rows = this.db.prepare(`
+        SELECT DISTINCT ${selectClause} FROM foods
+        LEFT JOIN json_each(foods.alternate_names) AS alt ON 1=1
+        WHERE ${whereClauses}
+        LIMIT ? OFFSET ?
+      `).all(...args);
+      return rows.map(this.deserializeRow);
+    }
+  }
+
+  // Dummy check: in real deployment, check for extension or pragma
+  private hasTrigram(): boolean {
+    // For now, always return false (SQLite default has no trigram)
+    return false;
+  }
   private readonly db: Database.Database;
 
   constructor() {
@@ -29,14 +74,14 @@ export class SQLiteDBAdapter {
   }
 
   private getFoodItemSelectClause(): string {
-    return `id, name, type, ean_13,
-            json_extract(labels, '$') as labels,
-            json_extract(nutrition_100g, '$') as nutrition_100g,
-            json_extract(alternate_names, '$') as alternate_names,
-            json_extract(source, '$') as source,
-            json_extract(serving, '$') as serving,
-            json_extract(package_size, '$') as package_size,
-            json_extract(ingredient_analysis, '$') as ingredient_analysis`;
+    return `foods.id, foods.name, foods.type, foods.ean_13,
+            json_extract(foods.labels, '$') as labels,
+            json_extract(foods.nutrition_100g, '$') as nutrition_100g,
+            json_extract(foods.alternate_names, '$') as alternate_names,
+            json_extract(foods.source, '$') as source,
+            json_extract(foods.serving, '$') as serving,
+            json_extract(foods.package_size, '$') as package_size,
+            json_extract(foods.ingredient_analysis, '$') as ingredient_analysis`;
   }
 
   async getAll(page: number, pageSize: number): Promise<FoodItem[]> {
