@@ -3,8 +3,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 interface FoodItem {
-  // No change, just context for insertion
-
   id: string;
   name: string;
   description?: string;
@@ -21,29 +19,22 @@ interface FoodItem {
 }
 
 export class SQLiteDBAdapter {
+  private readonly db: Database.Database;
+
+  constructor() {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const dbPath = path.join(__dirname, '..', 'data_local', 'opennutrition_foods.db');
+    this.db = new Database(dbPath, { readonly: true });
+  }
+
   /**
    * Search foods by name or any alternate name (case-insensitive, partial match)
    */
-  async searchByName(query: string, page: number = 1, pageSize: number = 25): Promise<FoodItem[]> {
-    const offset = (page - 1) * pageSize;
-    const selectClause = this.getFoodItemSelectClause();
-    // Use fuzzy search with trigram if available, else fallback to LIKE
-    if (this.hasTrigram()) {
-      // Use similarity() from pg_trgm or similar extension if available
-      const rows = this.db.prepare(`
-        SELECT DISTINCT ${selectClause},
-               MAX(similarity(LOWER(foods.name), LOWER(?))) as sim
-        FROM foods
-        LEFT JOIN json_each(foods.alternate_names) AS alt ON 1=1
-        WHERE similarity(LOWER(foods.name), LOWER(?)) > 0.2
-           OR similarity(LOWER(alt.value), LOWER(?)) > 0.2
-        GROUP BY foods.id
-        ORDER BY sim DESC
-        LIMIT ? OFFSET ?
-      `).all(query, query, query, pageSize, offset);
-      return rows.map(this.deserializeRow);
-    } else {
-      // Fallback: split query into words and match all with LIKE
+    async searchByName(query: string, page: number = 1, pageSize: number = 25): Promise<FoodItem[]> {
+      const offset = (page - 1) * pageSize;
+      const selectClause = this.getFoodItemSelectClause();
+      // Fuzzy search: split query into words and match all with LIKE
       const terms = query.trim().split(/\s+/).map(t => `%${t}%`);
       let whereClauses = terms.map(() => "(LOWER(foods.name) LIKE LOWER(?) OR LOWER(alt.value) LIKE LOWER(?))").join(" AND ");
       let args: string[] = [];
@@ -57,21 +48,6 @@ export class SQLiteDBAdapter {
       `).all(...args);
       return rows.map(this.deserializeRow);
     }
-  }
-
-  // Dummy check: in real deployment, check for extension or pragma
-  private hasTrigram(): boolean {
-    // For now, always return false (SQLite default has no trigram)
-    return false;
-  }
-  private readonly db: Database.Database;
-
-  constructor() {
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = path.dirname(__filename);
-    const dbPath = path.join(__dirname, '..', 'data_local', 'opennutrition_foods.db');
-    this.db = new Database(dbPath, { readonly: true });
-  }
 
   private getFoodItemSelectClause(): string {
     return `foods.id, foods.name, foods.type, foods.ean_13,
