@@ -7,7 +7,7 @@
     "mcp-opennutrition": "./build/index.js"
   },
   "scripts": {
-    "build": "tsc && npm run convert-data && chmod 755 build/index.js",
+    "build": "rm -rf build && tsc && npm run convert-data && chmod 755 build/index.js",
     "inspector": "tsc && npm run convert-data && npx @modelcontextprotocol/inspector npx tsx src/index.ts",
     "convert-data": "tsx scripts/decompress-dataset.ts && tsx scripts/tsv-to-sqlite.ts && rm -rf data_local_temp"
   },

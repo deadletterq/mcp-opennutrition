@@ -1,4 +1,6 @@
 import Database from 'better-sqlite3';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 interface FoodItem {
   id: string;
@@ -20,7 +22,10 @@ export class SQLiteDBAdapter {
   private readonly db: Database.Database;
 
   constructor() {
-    this.db = new Database('data_local/opennutrition_foods.db', { readonly: true });
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    const dbPath = path.join(__dirname, '..', 'data_local', 'opennutrition_foods.db');
+    this.db = new Database(dbPath, { readonly: true });
   }
 
   private getFoodItemSelectClause(): string {
