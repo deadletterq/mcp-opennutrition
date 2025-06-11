@@ -7,12 +7,12 @@ import {randomUUID} from "node:crypto";
 const SearchFoodByNameRequestSchema = z.object({
   query: z.string().min(1, 'Search query must not be empty'),
   page: z.number().min(1).optional().default(1),
-  pageSize: z.number().optional().default(25),
+  pageSize: z.number().optional().default(5),
 });
 
 const GetFoodsRequestSchema = z.object({
   page: z.number().min(1).optional().default(1),
-  pageSize: z.number().optional().default(25),
+  pageSize: z.number().optional().default(5),
 });
 
 const GetFoodByIdRequestSchema = z.object({
@@ -68,7 +68,9 @@ Examples:
 - 'Find all foods called "almond milk"'
 - 'Show me foods named "Quaker Oats".'
 
-If the query involves searching foods by name in any way, ALWAYS use this tool. Never use for unrelated domains.`,
+If the query involves searching foods by name in any way, ALWAYS use this tool. Never use for unrelated domains.
+
+If you cannot find the desired food in the first page of results, you MUST use pagination (by incrementing the page number) to retrieve more results until you find the item or exhaust the available data. The data returned will be in the order of relevance.`,
       SearchFoodByNameRequestSchema.shape,
       {
         title: "Search food by name",
@@ -102,7 +104,9 @@ Examples:
 - 'Show me all breakfast cereals'
 - 'List all gluten-free foods'
 
-If the query involves listing or browsing foods, ALWAYS use this tool. Never use for unrelated domains.`,
+If the query involves listing or browsing foods, ALWAYS use this tool. Never use for unrelated domains.
+
+If you cannot find the desired food in the first page of results, you MUST use pagination (by incrementing the page number) to retrieve more results until you find the item or exhaust the available data.`,
       GetFoodsRequestSchema.shape,
       {
         title: "Get a list of foods",
