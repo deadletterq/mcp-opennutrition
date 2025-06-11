@@ -66,17 +66,49 @@ function createTable(db: Database.Database, columns: string[]): void {
 }
 
 function insertData(db: Database.Database, columns: string[], rows: string[][]): void {
-  const placeholders = columns.map(() => '?').join(', ');
-  const insertSQL = `INSERT INTO foods (${columns.map(col => `"${col}"`).join(', ')}) VALUES (${placeholders})`;
+  const jsonColumns = [
+    'alternate_names',
+    'labels',
+    'source',
+    'nutrition_100g',
+    'serving',
+    'package_size',
+    'ingredient_analysis',
+  ];
   
+  const columnSql = columns.map(col => {
+    if (jsonColumns.includes(col)) {
+      return `json(?) AS "${col}"`;
+    } else {
+      return `? AS "${col}"`;
+    }
+  }).join(', ');
+  
+  const insertSQL = `INSERT INTO foods SELECT ${columnSql}`;
   const stmt = db.prepare(insertSQL);
   
   const insertMany = db.transaction((rows: string[][]) => {
     for (const row of rows) {
-      stmt.run(row);
+      const rowToInsert: any[] = [...row];
+      
+      for (const jsonCol of jsonColumns) {
+        const colIndex = columns.indexOf(jsonCol);
+        if (colIndex !== -1 && rowToInsert[colIndex] !== undefined && rowToInsert[colIndex] !== '') {
+          try {
+            // Parse and stringify to ensure valid JSON format
+            const parsed = JSON.parse(rowToInsert[colIndex]);
+            rowToInsert[colIndex] = JSON.stringify(parsed);
+          } catch (e) {
+            console.warn(`Warning: Could not parse JSON for column '${jsonCol}' with value '${rowToInsert[colIndex]}'. Setting to NULL.`);
+            rowToInsert[colIndex] = null;
+          }
+        }
+      }
+      
+      stmt.run(rowToInsert);
     }
   });
-  
+
   insertMany(rows);
   console.log(`Inserted ${rows.length} rows into database`);
 }
