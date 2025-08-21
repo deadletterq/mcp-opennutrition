@@ -1,4 +1,5 @@
 # MCP OpenNutrition
+[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/deadletterq/mcp-opennutrition)](https://archestra.ai/mcp-catalog/deadletterq__mcp-opennutrition)
 
 A Model Context Protocol (MCP) server providing access to the comprehensive OpenNutrition food database with 300,000+ food items, nutritional data, and barcode lookups.
 
