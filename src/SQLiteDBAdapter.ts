@@ -24,8 +24,17 @@ export class SQLiteDBAdapter {
   constructor() {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    const dbPath = path.join(__dirname, '..', 'data_local', 'opennutrition_foods.db');
-    this.db = new Database(dbPath, {readonly: true});
+    
+    // Use DB_PATH from environment if available, otherwise use default path
+    const dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'data_local', 'opennutrition_foods.db');
+    
+    try {
+      this.db = new Database(dbPath, {readonly: true});
+      console.error(`Connected to database at: ${dbPath}`);
+    } catch (error) {
+      console.error(`Failed to connect to database at: ${dbPath}`, error);
+      throw error;
+    }
   }
 
   /**

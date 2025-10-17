@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  mcp-opennutrition:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mcp-opennutrition-dev
+    volumes:
+      # Mount source code for development
+      - ./src:/app/src
+      - ./scripts:/app/scripts
+      - ./tsconfig.json:/app/tsconfig.json
+      # Mount existing dataset
+      - ./data:/app/data
+      # Mount existing database
+      - ./data_local:/data_local
+      # Persist database between restarts
+      - opennutrition-data:/data
+    environment:
+      - NODE_ENV=development
+      - TRANSPORT_TYPE=http
+      - DB_PATH=/data_local/opennutrition_foods.db
+      - DATASET_URL=https://downloads.opennutrition.app/opennutrition-dataset-2025.1.zip
+      - LOG_LEVEL=debug
+      - PORT=3000
+      - HOST=0.0.0.0
+    ports:
+      # Expose MCP HTTP/SSE endpoint
+      - "3000:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  opennutrition-data:
+    driver: local
