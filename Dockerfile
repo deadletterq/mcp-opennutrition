@@ -1,23 +1,27 @@
-# Use Node LTS version (v20.x matches your local)
-FROM node:lts-slim
+# Dockerfile
+FROM node:20-slim
 
-# Set working directory
 WORKDIR /app
 
-# Copy only package files first for better caching
+# Install build tools for native modules
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy package files
 COPY package*.json ./
 
 # Install dependencies
 RUN npm ci
 
-# Copy the rest of the project
+# Copy project files
 COPY . .
 
-# Build the project
+# Build project if needed
 RUN npm run build
 
-# Expose port if your MCP server listens on a port
 EXPOSE 3000
 
-# Run the built project
-CMD ["node", "build/index.js"]
+CMD ["node", "src/index.js"]  # adjust to correct entry point
