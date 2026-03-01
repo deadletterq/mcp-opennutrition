@@ -1,7 +1,7 @@
 import {McpServer,} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
 import {SQLiteDBAdapter} from "./SQLiteDBAdapter.js";
-import {z} from "zod";
+import {z} from "zod/v3";
 import {randomUUID} from "node:crypto";
 
 const SearchFoodByNameRequestSchema = z.object({

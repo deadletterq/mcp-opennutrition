@@ -19,9 +19,12 @@ RUN npm ci
 # Copy project files
 COPY . .
 
+# Rebuild native modules for the container's architecture
+RUN npm rebuild better-sqlite3
+
 # Build project if needed
 RUN npm run build
 
 EXPOSE 3000
 
-CMD ["node", "src/index.js"]  # adjust to correct entry point
+CMD ["node", "build/index.js"]
