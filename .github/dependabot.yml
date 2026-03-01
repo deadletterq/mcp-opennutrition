@@ -6,4 +6,3 @@ updates:
       interval: "weekly"  # check for updates weekly
     commit-message:
       prefix: "chore"
-    open-pull-requests-limit: 5
