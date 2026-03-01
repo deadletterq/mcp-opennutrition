@@ -3,9 +3,6 @@ name: Build and Publish Docker Image
 on:
   push:
     branches: [ main ]
-  pull_request:
-  release:
-    types: [ published ]
   schedule:
     # Monthly rebuild (1st day of month at 03:00 UTC)
     - cron: "0 3 1 * *"
