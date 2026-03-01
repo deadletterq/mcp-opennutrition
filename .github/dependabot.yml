@@ -1,0 +1,12 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"        # location of package.json
+    schedule:
+      interval: "weekly"  # check for updates weekly
+    commit-message:
+      prefix: "chore"
+    open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "*"  # optional: ignore specific deps
+        versions: []
