@@ -24,7 +24,7 @@
     "better-sqlite3": "^12.6.2",
     "papaparse": "^5.4.1",
     "yauzl": "^3.2.0",
-    "zod": "^3.25.46"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
