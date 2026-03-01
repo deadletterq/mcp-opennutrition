@@ -19,7 +19,7 @@
   "license": "ISC",
   "description": "MCP implementation for OpenNutrition dataset access. Provides  listing, querying, and filtering foods.",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@types/yauzl": "^2.10.3",
     "better-sqlite3": "^11.7.0",
     "papaparse": "^5.4.1",
