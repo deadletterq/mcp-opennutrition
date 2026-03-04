@@ -16,7 +16,7 @@
   ],
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "description": "MCP implementation for OpenNutrition dataset access. Provides  listing, querying, and filtering foods.",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
