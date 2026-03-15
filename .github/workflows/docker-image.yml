@@ -3,9 +3,6 @@ name: Build and Publish Docker Image
 on:
   push:
     branches: [ main ]
-  schedule:
-    # Monthly rebuild (1st day of month at 03:00 UTC)
-    - cron: "0 3 1 * *"
   workflow_dispatch:
 
 permissions:
@@ -54,5 +51,3 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max

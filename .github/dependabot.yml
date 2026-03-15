@@ -1,8 +1,0 @@
-version: 2
-updates:
-  - package-ecosystem: "npm"
-    directory: "/"        # location of package.json
-    schedule:
-      interval: "weekly"  # check for updates weekly
-    commit-message:
-      prefix: "chore"
