@@ -222,3 +222,7 @@ Temporary Items
 .apdisk
 
 .idea
+
+
+.claude/*
+.vscode/*
