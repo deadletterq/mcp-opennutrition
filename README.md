@@ -19,7 +19,7 @@ The easiest way to run the server is via Docker. No build steps required.
 
 Run the container:
 ```bash
-docker run --rm -p 9113:9113 deadletterq/mcp-opennutrition
+docker run --rm -p 9113:3000 deadletterq/mcp-opennutrition
 ```
 
 Then add to your MCP configuration:
