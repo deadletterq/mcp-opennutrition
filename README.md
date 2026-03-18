@@ -13,6 +13,25 @@ OpenNutrition addresses the longstanding issues with fragmented and unreliable n
 
 ## Installation
 
+### Docker (recommended)
+
+The easiest way to run the server is via Docker. No build steps required.
+
+Run the container:
+```bash
+docker run --rm -p 9113:9113 deadletterq/mcp-opennutrition
+```
+
+Then add to your MCP configuration:
+```json
+"mcp-opennutrition": {
+    "type": "streamable-http",
+    "url": "http://localhost:9113"
+}
+```
+
+### From source
+
 1. Install dependencies:
    ```bash
    npm install
@@ -23,7 +42,7 @@ OpenNutrition addresses the longstanding issues with fragmented and unreliable n
    npm run build
    ```
 
-3. Add to your Claude/Cline MCP configuration (set the same version of node that you used to build the project):
+3. Add to your MCP configuration (set the same version of node that you used to build the project):
    ```json
    "mcp-opennutrition": {
        "command": "/Users/YOUR.USERNAME/.nvm/versions/node/v20.19.0/bin/node",
