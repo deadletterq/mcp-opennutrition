@@ -1,8 +1,10 @@
 import {McpServer,} from "@modelcontextprotocol/sdk/server/mcp.js";
+import {StreamableHTTPServerTransport} from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
 import {SQLiteDBAdapter} from "./SQLiteDBAdapter.js";
-import {z} from "zod";
+import {z} from "zod/v3";
 import {randomUUID} from "node:crypto";
+import {createServer} from "node:http";
 
 const SearchFoodByNameRequestSchema = z.object({
   query: z.string().min(1, 'Search query must not be empty'),
@@ -52,7 +54,6 @@ If there is any possibility that a user request involves food, nutrition, or die
   });
 
   constructor(
-      private readonly transport: StdioServerTransport,
       private readonly db: SQLiteDBAdapter,
   ) {
     this.server.tool(
@@ -195,17 +196,36 @@ If the query involves food identification by barcode, ALWAYS use this tool. Neve
     });
   }
 
-  async connect(): Promise<void> {
-    return this.server.connect(this.transport)
+  async connect(transport: StreamableHTTPServerTransport | StdioServerTransport): Promise<void> {
+    return this.server.connect(transport);
   }
 }
 
 async function main() {
-  const db = new SQLiteDBAdapter()
-  const transport = new StdioServerTransport();
-  const server = new MCPServer(transport, db);
-  await server.connect();
-  console.error("OpenNutrition MCP Server running on stdio");
+  const db = new SQLiteDBAdapter();
+  const mcpServer = new MCPServer(db);
+
+  const useHttp = process.argv.includes("--http");
+
+  if (useHttp) {
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+    });
+    await mcpServer.connect(transport);
+
+    const httpServer = createServer(async (req, res) => {
+      await transport.handleRequest(req, res);
+    });
+
+    const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+    httpServer.listen(port, () => {
+      console.error(`OpenNutrition MCP Server running on HTTP port ${port}`);
+    });
+  } else {
+    const transport = new StdioServerTransport();
+    await mcpServer.connect(transport);
+    console.error("OpenNutrition MCP Server running on stdio");
+  }
 }
 
 main().catch((error) => {
