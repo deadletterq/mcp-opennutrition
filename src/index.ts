@@ -217,7 +217,7 @@ async function main() {
       await transport.handleRequest(req, res);
     });
 
-    const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+    const port = process.env.PORT ? parseInt(process.env.PORT) : 9113;
     httpServer.listen(port, () => {
       console.error(`OpenNutrition MCP Server running on HTTP port ${port}`);
     });

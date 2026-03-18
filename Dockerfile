@@ -25,7 +25,7 @@ RUN npm rebuild better-sqlite3
 # Build project if needed
 RUN npm run build
 
-EXPOSE 3000
+EXPOSE 9113
 
 ENTRYPOINT ["node", "build/index.js"]
 CMD ["--http"]
