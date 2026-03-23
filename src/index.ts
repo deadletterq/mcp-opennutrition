@@ -203,18 +203,47 @@ If the query involves food identification by barcode, ALWAYS use this tool. Neve
 
 async function main() {
   const db = new SQLiteDBAdapter();
-  const mcpServer = new MCPServer(db);
 
   const useHttp = process.argv.includes("--http");
 
   if (useHttp) {
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
-    });
-    await mcpServer.connect(transport);
+    const sessions = new Map<string, StreamableHTTPServerTransport>();
 
     const httpServer = createServer(async (req, res) => {
+      const sessionId = req.headers["mcp-session-id"] as string | undefined;
+
+      if (sessionId && sessions.has(sessionId)) {
+        await sessions.get(sessionId)!.handleRequest(req, res);
+        return;
+      }
+
+      if (sessionId) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Session not found" }));
+        return;
+      }
+
+      // New session
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+      });
+
+      transport.onclose = () => {
+        if (transport.sessionId) {
+          sessions.delete(transport.sessionId);
+          console.error(`Session closed: ${transport.sessionId}`);
+        }
+      };
+
+      const mcpServer = new MCPServer(db);
+      await mcpServer.connect(transport);
+
       await transport.handleRequest(req, res);
+
+      if (transport.sessionId) {
+        sessions.set(transport.sessionId, transport);
+        console.error(`Session created: ${transport.sessionId}`);
+      }
     });
 
     const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
@@ -223,6 +252,7 @@ async function main() {
     });
   } else {
     const transport = new StdioServerTransport();
+    const mcpServer = new MCPServer(db);
     await mcpServer.connect(transport);
     console.error("OpenNutrition MCP Server running on stdio");
   }
