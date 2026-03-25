@@ -3,7 +3,6 @@ import {StreamableHTTPServerTransport} from "@modelcontextprotocol/sdk/server/st
 import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
 import {SQLiteDBAdapter} from "./SQLiteDBAdapter.js";
 import {z} from "zod/v3";
-import {randomUUID} from "node:crypto";
 import {createServer} from "node:http";
 
 const SearchFoodByNameRequestSchema = z.object({
@@ -207,43 +206,13 @@ async function main() {
   const useHttp = process.argv.includes("--http");
 
   if (useHttp) {
-    const sessions = new Map<string, StreamableHTTPServerTransport>();
-
     const httpServer = createServer(async (req, res) => {
-      const sessionId = req.headers["mcp-session-id"] as string | undefined;
-
-      if (sessionId && sessions.has(sessionId)) {
-        await sessions.get(sessionId)!.handleRequest(req, res);
-        return;
-      }
-
-      if (sessionId) {
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ error: "Session not found" }));
-        return;
-      }
-
-      // New session
       const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => randomUUID(),
+        sessionIdGenerator: undefined,
       });
-
-      transport.onclose = () => {
-        if (transport.sessionId) {
-          sessions.delete(transport.sessionId);
-          console.error(`Session closed: ${transport.sessionId}`);
-        }
-      };
-
       const mcpServer = new MCPServer(db);
       await mcpServer.connect(transport);
-
       await transport.handleRequest(req, res);
-
-      if (transport.sessionId) {
-        sessions.set(transport.sessionId, transport);
-        console.error(`Session created: ${transport.sessionId}`);
-      }
     });
 
     const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
