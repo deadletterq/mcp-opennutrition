@@ -11,6 +11,10 @@ OpenNutrition addresses the longstanding issues with fragmented and unreliable n
 - **Get by ID**: Retrieve detailed nutritional information using food IDs
 - **Barcode Lookup**: Find foods using EAN-13 barcodes
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/deadletterq-mcp-opennutrition).
+
 ## Installation
 
 ### Docker (recommended)
