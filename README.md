@@ -52,6 +52,36 @@ Then add to your MCP configuration:
    }
    ```
 
+## Docker
+
+Run the server in HTTP mode via Docker:
+
+```bash
+docker run -p 3000:3000 YOUR_DOCKERHUB_USERNAME/mcp-opennutrition
+```
+
+Then configure your MCP client to use the HTTP transport:
+
+```json
+"mcp-opennutrition": {
+    "type": "http",
+    "url": "http://localhost:3000/"
+}
+```
+
+For Claude Code specifically:
+```json
+"mcp-opennutrition": {
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/inspector", "--transport", "streamable-http", "--url", "http://localhost:3000/"]
+}
+```
+
+Or via `claude mcp add`:
+```bash
+claude mcp add --transport http mcp-opennutrition http://localhost:3000/
+```
+
 ## Data Source
 
 This server uses the [OpenNutrition dataset](https://www.opennutrition.app/).

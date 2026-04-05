@@ -3,7 +3,6 @@ import {StreamableHTTPServerTransport} from "@modelcontextprotocol/sdk/server/st
 import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
 import {SQLiteDBAdapter} from "./SQLiteDBAdapter.js";
 import {z} from "zod/v3";
-import {randomUUID} from "node:crypto";
 import {createServer} from "node:http";
 
 const SearchFoodByNameRequestSchema = z.object({
@@ -203,17 +202,16 @@ If the query involves food identification by barcode, ALWAYS use this tool. Neve
 
 async function main() {
   const db = new SQLiteDBAdapter();
-  const mcpServer = new MCPServer(db);
 
   const useHttp = process.argv.includes("--http");
 
   if (useHttp) {
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
-    });
-    await mcpServer.connect(transport);
-
     const httpServer = createServer(async (req, res) => {
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+      });
+      const mcpServer = new MCPServer(db);
+      await mcpServer.connect(transport);
       await transport.handleRequest(req, res);
     });
 
@@ -223,6 +221,7 @@ async function main() {
     });
   } else {
     const transport = new StdioServerTransport();
+    const mcpServer = new MCPServer(db);
     await mcpServer.connect(transport);
     console.error("OpenNutrition MCP Server running on stdio");
   }
