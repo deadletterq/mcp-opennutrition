@@ -5,23 +5,56 @@ import {SQLiteDBAdapter} from "./SQLiteDBAdapter.js";
 import {z} from "zod/v3";
 import {createServer} from "node:http";
 
+const CORE_FIELDS = [
+  'calories', 'protein', 'carbohydrates', 'total_fat', 'dietary_fiber',
+  'total_sugars', 'added_sugars', 'sodium', 'potassium', 'cholesterol',
+  'iron', 'calcium', 'vitamin_c', 'vitamin_d', 'vitamin_b12',
+  'saturated_fats', 'trans_fats', 'ethyl_alcohol', 'water'
+];
+
+const FieldsSchema = z.array(z.string()).optional().describe(
+  'Nutrition fields to include in the response. If omitted, returns core fields only: calories, protein, carbohydrates, total_fat, dietary_fiber, total_sugars, added_sugars, sodium, potassium, cholesterol, iron, calcium, vitamin_c, vitamin_d, vitamin_b12, saturated_fats, trans_fats, ethyl_alcohol, water. Pass ["*"] for all fields.'
+);
+
+function filterNutritionFields(
+  nutrition: Record<string, number> | undefined,
+  fields: string[] | undefined
+): Record<string, number> | undefined {
+  if (!nutrition) return nutrition;
+  // ["*"] returns everything
+  if (fields && fields.includes('*')) return nutrition;
+  // Use provided fields or default to CORE_FIELDS
+  const allowed = fields && fields.length > 0 ? fields : CORE_FIELDS;
+  const filtered: Record<string, number> = {};
+  for (const key of allowed) {
+    if (key in nutrition) {
+      filtered[key] = nutrition[key];
+    }
+  }
+  return filtered;
+}
+
 const SearchFoodByNameRequestSchema = z.object({
   query: z.string().min(1, 'Search query must not be empty'),
   page: z.number().min(1).optional().default(1),
   pageSize: z.number().optional().default(5),
+  fields: FieldsSchema,
 });
 
 const GetFoodsRequestSchema = z.object({
   page: z.number().min(1).optional().default(1),
   pageSize: z.number().optional().default(5),
+  fields: FieldsSchema,
 });
 
 const GetFoodByIdRequestSchema = z.object({
   id: z.string().startsWith("fd_", "Food ID must start with 'fd_'"),
+  fields: FieldsSchema,
 });
 
 const GetFoodByEan13RequestSchema = z.object({
-  ean_13: z.string().length(13, "EAN-13 must be exactly 13 characters long")
+  ean_13: z.string().length(13, "EAN-13 must be exactly 13 characters long"),
+  fields: FieldsSchema,
 });
 
 class MCPServer {
@@ -70,7 +103,9 @@ Examples:
 
 If the query involves searching foods by name in any way, ALWAYS use this tool. Never use for unrelated domains.
 
-If you cannot find the desired food in the first page of results, you MUST use pagination (by incrementing the page number) to retrieve more results until you find the item or exhaust the available data. The data returned will be in the order of relevance.`,
+If you cannot find the desired food in the first page of results, you MUST use pagination (by incrementing the page number) to retrieve more results until you find the item or exhaust the available data. The data returned will be in the order of relevance.
+
+The \`fields\` parameter controls which nutrition fields are returned. If omitted, returns a core set of ~19 fields (calories, macros, key vitamins/minerals). Pass ["*"] to get all 80+ fields. Pass a specific list like ["calories","protein","carbohydrates","total_fat"] for custom filtering.`,
       SearchFoodByNameRequestSchema.shape,
       {
         title: "Search food by name",
@@ -78,15 +113,19 @@ If you cannot find the desired food in the first page of results, you MUST use p
       },
       async (args, extra) => {
         const foods = await this.db.searchByName(args.query, args.page, args.pageSize);
+        const filteredFoods = foods.map(food => ({
+          ...food,
+          nutrition_100g: filterNutritionFields(food.nutrition_100g, args.fields),
+        }));
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify(foods, null, 2)
+              text: JSON.stringify(filteredFoods, null, 2)
             }
           ],
           structuredContent: {
-            foods,
+            foods: filteredFoods,
           },
         };
       }
@@ -106,7 +145,9 @@ Examples:
 
 If the query involves listing or browsing foods, ALWAYS use this tool. Never use for unrelated domains.
 
-If you cannot find the desired food in the first page of results, you MUST use pagination (by incrementing the page number) to retrieve more results until you find the item or exhaust the available data.`,
+If you cannot find the desired food in the first page of results, you MUST use pagination (by incrementing the page number) to retrieve more results until you find the item or exhaust the available data.
+
+The \`fields\` parameter controls which nutrition fields are returned. If omitted, returns a core set of ~19 fields (calories, macros, key vitamins/minerals). Pass ["*"] to get all 80+ fields. Pass a specific list like ["calories","protein","carbohydrates","total_fat"] for custom filtering.`,
       GetFoodsRequestSchema.shape,
       {
         title: "Get a list of foods",
@@ -114,15 +155,19 @@ If you cannot find the desired food in the first page of results, you MUST use p
       },
       async (args, extra) => {
       const foods = await this.db.getAll(args.page, args.pageSize);
+      const filteredFoods = foods.map(food => ({
+        ...food,
+        nutrition_100g: filterNutritionFields(food.nutrition_100g, args.fields),
+      }));
       return {
         content: [
           {
             type: "text",
-            text: JSON.stringify(foods, null, 2)
+            text: JSON.stringify(filteredFoods, null, 2)
           }
         ],
         structuredContent: {
-          foods,
+          foods: filteredFoods,
         },
       };
     });
@@ -139,7 +184,9 @@ Use cases (MUST use this tool):
 Example:
 - 'Get details for fd_98765.'
 
-If the query involves retrieving food info by ID, ALWAYS use this tool. Never use for unrelated domains.`,
+If the query involves retrieving food info by ID, ALWAYS use this tool. Never use for unrelated domains.
+
+The \`fields\` parameter controls which nutrition fields are returned. If omitted, returns a core set of ~19 fields (calories, macros, key vitamins/minerals). Pass ["*"] to get all 80+ fields. Pass a specific list like ["calories","protein","carbohydrates","total_fat"] for custom filtering.`,
       GetFoodByIdRequestSchema.shape,
       {
         title: "Get a food by id",
@@ -147,15 +194,19 @@ If the query involves retrieving food info by ID, ALWAYS use this tool. Never us
       },
       async (args, extra) => {
       const food = await this.db.getById(args.id);
+      const filteredFood = food ? {
+        ...food,
+        nutrition_100g: filterNutritionFields(food.nutrition_100g, args.fields),
+      } : null;
       return {
         content: [
           {
             type: "text",
-            text: JSON.stringify(food, null, 2)
+            text: JSON.stringify(filteredFood, null, 2)
           }
         ],
         structuredContent: {
-          food: food,
+          food: filteredFood,
         },
       };
     });
@@ -173,7 +224,9 @@ Examples:
 - 'What food has barcode 4006381333931?'
 - 'Scan this barcode to get nutrition info.'
 
-If the query involves food identification by barcode, ALWAYS use this tool. Never use for unrelated domains.`,
+If the query involves food identification by barcode, ALWAYS use this tool. Never use for unrelated domains.
+
+The \`fields\` parameter controls which nutrition fields are returned. If omitted, returns a core set of ~19 fields (calories, macros, key vitamins/minerals). Pass ["*"] to get all 80+ fields. Pass a specific list like ["calories","protein","carbohydrates","total_fat"] for custom filtering.`,
       GetFoodByEan13RequestSchema.shape,
       {
         title: "Get a food by EAN-13",
@@ -181,15 +234,19 @@ If the query involves food identification by barcode, ALWAYS use this tool. Neve
       },
       async (args, extra) => {
       const food = await this.db.getByEan13(args.ean_13);
+      const filteredFood = food ? {
+        ...food,
+        nutrition_100g: filterNutritionFields(food.nutrition_100g, args.fields),
+      } : null;
       return {
         content: [
           {
             type: "text",
-            text: JSON.stringify(food, null, 2)
+            text: JSON.stringify(filteredFood, null, 2)
           }
         ],
         structuredContent: {
-          food: food,
+          food: filteredFood,
         },
       };
     });
