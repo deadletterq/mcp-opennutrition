@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/deadletterq-mcp-opennutrition-badge.png)](https://mseep.ai/app/deadletterq-mcp-opennutrition)
+
 # MCP OpenNutrition
 
 A Model Context Protocol (MCP) server providing access to the comprehensive OpenNutrition food database with 300,000+ food items, nutritional data, and barcode lookups.
