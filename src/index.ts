@@ -82,7 +82,13 @@ If there is any possibility that a user request involves food, nutrition, or die
       logging: {
         'get-food-by-id': true,
       },
-    }
+    },
+    // Bounds the number of array elements and object keys the SDK walks in a
+    // tools/call's arguments before schema validation. The largest legitimate
+    // call here is `fields` listing all 90 nutrition keys (~94 counted
+    // elements); 2,000 leaves more than 20x headroom while refusing a payload
+    // that would otherwise be walked in full.
+    maxToolInputElements: 2000,
   });
 
   constructor(

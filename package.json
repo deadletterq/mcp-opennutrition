@@ -19,7 +19,7 @@
   "license": "MIT",
   "description": "MCP implementation for OpenNutrition dataset access. Provides  listing, querying, and filtering foods.",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "better-sqlite3": "^12.6.2",
     "papaparse": "^5.4.1",
     "yauzl": "^3.2.0",
